@@ -1,7 +1,11 @@
-// {0_0:1,2_2:1}每个life的名字为x坐标_y坐标
+const canvas = document.getElementById('cvs')
+canvas.width = canvas.clientWidth
+canvas.height = canvas.clientHeight
+const ctx = canvas.getContext('2d')
+
 class World {
   constructor(startArr) {
-    // 记录游戏内的生命
+    // 记录游戏内的生命 {_0_0:true,_2_2:true}每个life的名字为x坐标_y坐标
     this.lives = {}
     // 游戏的区域，随着生命的坐标增长而增长
     this.region = {
@@ -10,15 +14,17 @@ class World {
       minY: 0,
       maxY: 0
     }
+    // 暂存一轮游戏中出生/死亡的坐标，在统一处理后清空。
     this.dyingStash = []
     this.beingBornStash = []
+
     this.initLives(startArr)
   }
   // 初始化lives稀疏数组
   initLives(startArr) {
-    let self = this
+    const self = this
     // 初始化lives
-    startArr.forEach(positionArr => this.signBeingBorn(positionArr[0], positionArr[1]))
+    startArr.forEach(positionArr => this.signBeingBorn(...positionArr))
     this.beingBornStash.forEach(positionArr => this.born(...positionArr))
     this.beingBornStash.length = 0
     // 定义length
@@ -26,15 +32,15 @@ class World {
       get() {
         return Object.keys(self.lives).length
       },
-      set(){
+      set() {
         return
       }
     })
   }
-  // 获取world中坐标xy处的值
+  // 获取world中坐标xy处是否存在生命
   isAliveAt(x, y) {
     const key = `_${x}_${y}`
-    return this.lives[key]
+    return this.lives[key] ? true : false
   }
   // 标记为将出生
   signBeingBorn(x, y) {
@@ -120,10 +126,11 @@ class World {
     // 清除stash
     this.beingBornStash.length = 0
     this.dyingStash.length = 0
-    console.log({...this.lives})
+    // console.log({ ...this.lives
+    // })
   }
 }
-let gameWorld = new World([
+const gameWorld = new World([
   // 
   [0, 0],
   [3, 0],
@@ -141,7 +148,30 @@ let gameWorld = new World([
   // [1,2],
   // [2,0]
 ])
-// gameWorld.playGameTogether()
+
 setInterval(function () {
+  // 大小
+  const size = 20
+  // 获取刷新区域
+  const {
+    minX,
+    maxX,
+    minY,
+    maxY
+  } = gameWorld.region
+  const regionRectArgs = [minX - 1, minY - 1, (maxX - minX + 2) * size, (maxY - minY + 2) * size]
+  // 清空刷新区域画布
+  ctx.clearRect(...regionRectArgs)
+  // 下一次游戏
   gameWorld.playGame()
-}, 1000)
+  // 获取有生命的坐标
+  const lives = gameWorld.lives
+  const livesPosStrArr = Object.keys(lives)
+  // 依据坐标画图
+  livesPosStrArr.forEach(posStr => {
+    // _1_2=>1_2=>[1,2]
+    const positionArr = posStr.slice(1).split('_')
+    const [x, y] = positionArr
+    ctx.fillRect(parseInt(x) * size, parseInt(y) * size, size, size)
+  })
+}, 200)
