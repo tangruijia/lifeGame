@@ -1,6 +1,7 @@
+const body = document.getElementsByTagName('body')[0]
 const canvas = document.getElementById('cvs')
-canvas.width = canvas.clientWidth
-canvas.height = canvas.clientHeight
+canvas.width = body.clientWidth
+canvas.height = body.clientHeight
 const ctx = canvas.getContext('2d')
 
 class World {
@@ -78,7 +79,7 @@ class World {
   // 根据一个格子的周围8个格子标记生存死亡
   signBasisOfAround(x, y) {
     // 计算周围格子的坐标集合
-    const posAround = ((x, y) => {
+      const posAround = (() => {
       let arr = []
       for (let i = -1; i <= 1; i++) {
         for (let j = -1; j <= 1; j++) {
@@ -88,10 +89,18 @@ class World {
       // 去除[x,y]
       arr.splice(4, 1)
       return arr
-    })(x, y)
+    })()
     // 数周围格子存活数
-    const aliveNumAround = posAround.filter(positionArr => this.isAliveAt(...positionArr)).length
-
+    const aliveNumAround = (()=>{
+      let count = 0
+      posAround.forEach(positionArr => {
+        if(this.isAliveAt(...positionArr)){
+          count++
+        }
+      })
+      return count
+    })()
+    // 游戏规则
     if (aliveNumAround === 2) {
       // 如果一个细胞周围有2个细胞为生，则该细胞的生死状态保持不变
     } else if (aliveNumAround === 3) {
@@ -130,28 +139,43 @@ class World {
     // })
   }
 }
-const gameWorld = new World([
-  // 
-  [0, 0],
-  [3, 0],
-  [4, 1],
-  [4, 2],
-  [4, 3],
-  [3, 3],
-  [2, 3],
-  [1, 3],
-  [0, 2],
-  // ==========
-  // [0,0],
-  // [0,1],
-  // [1,1],
-  // [1,2],
-  // [2,0]
-])
+
+// 煮汤
+function makeSoup(minX, maxX, minY, maxY, probability) {
+  let resArr = []
+  let randomNum = 0
+  for (let i = minX; i <= maxX; i++) {
+    for (let j = minY; j <= maxY; j++) {
+      randomNum = Math.random()
+      if (randomNum <= probability) {
+        resArr.push([i, j])
+      }
+    }
+  }
+  return resArr
+}
+
+const gameWorld = new World(makeSoup(20,100,20,100,0.37))
+// 
+// [0, 0],
+// [3, 0],
+// [4, 1],
+// [4, 2],
+// [4, 3],
+// [3, 3],
+// [2, 3],
+// [1, 3],
+// [0, 2],
+// ==========
+// [0, 0],
+// [1, 1],
+// [1, 2],
+// [2, 0],
+// [2, 1]
 
 setInterval(function () {
   // 大小
-  const size = 20
+  const size = 5
   // 获取刷新区域
   const {
     minX,
@@ -172,6 +196,8 @@ setInterval(function () {
     // _1_2=>1_2=>[1,2]
     const positionArr = posStr.slice(1).split('_')
     const [x, y] = positionArr
+    // 画方块
     ctx.fillRect(parseInt(x) * size, parseInt(y) * size, size, size)
   })
-}, 200)
+  console.log(gameWorld.lives.length);
+}, 100)
