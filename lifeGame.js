@@ -8,6 +8,8 @@ class World {
   constructor(startArr) {
     // 记录游戏内的生命 {_0_0:true,_2_2:true}每个life的名字为x坐标_y坐标
     this.lives = {}
+    // 记录生命的个数
+    this.count = 0
     // 游戏的区域，随着生命的坐标增长而增长
     this.region = {
       minX: 0,
@@ -28,20 +30,10 @@ class World {
     startArr.forEach(positionArr => this.signBeingBorn(...positionArr))
     this.beingBornStash.forEach(positionArr => this.born(...positionArr))
     this.beingBornStash.length = 0
-    // 定义length
-    Object.defineProperty(this.lives, 'length', {
-      get() {
-        return Object.keys(self.lives).length
-      },
-      set() {
-        return
-      }
-    })
   }
   // 获取world中坐标xy处是否存在生命
-  isAliveAt(x, y) {
-    const key = `_${x}_${y}`
-    return this.lives[key] ? true : false
+  isAliveAt(posStr) {
+    return this.lives[posStr] ? true : false
   }
   // 标记为将出生
   signBeingBorn(x, y) {
@@ -68,33 +60,29 @@ class World {
   born(x, y) {
     const key = `_${x}_${y}`
     this.lives[key] = true
+    this.count++
   }
   // 坐标xy处死亡
   kill(x, y) {
     const key = `_${x}_${y}`
     if (this.lives[key]) {
-      delete this.lives[key]
+      this.lives[key] = false
     }
+    this.count--
   }
   // 根据一个格子的周围8个格子标记生存死亡
   signBasisOfAround(x, y) {
     // 计算周围格子的坐标集合
-      const posAround = (() => {
-      let arr = []
-      for (let i = -1; i <= 1; i++) {
-        for (let j = -1; j <= 1; j++) {
-          arr.push([x + i, y + j])
-        }
-      }
-      // 去除[x,y]
-      arr.splice(4, 1)
-      return arr
-    })()
+    const posAround = [
+      `_${x - 1}_${y - 1}`, `_${x}_${y - 1}`, `_${x + 1}_${y - 1}`,
+      `_${x - 1}_${y }`, `_${x + 1}_${y}`,
+      `_${x - 1}_${y + 1}`, `_${x}_${y + 1}`, `_${x + 1}_${y + 1}`
+    ]
     // 数周围格子存活数
-    const aliveNumAround = (()=>{
+    const aliveNumAround = (() => {
       let count = 0
-      posAround.forEach(positionArr => {
-        if(this.isAliveAt(...positionArr)){
+      posAround.forEach(posStr => {
+        if (this.isAliveAt(posStr)) {
           count++
         }
       })
@@ -105,12 +93,12 @@ class World {
       // 如果一个细胞周围有2个细胞为生，则该细胞的生死状态保持不变
     } else if (aliveNumAround === 3) {
       // 如果一个细胞周围有3个细胞为生，则该细胞为生，即该细胞若原先为死，则转为生，若原先为生，则保持不变
-      if (!this.isAliveAt(x, y)) {
+      if (!this.isAliveAt(`_${x}_${y}`)) {
         this.signBeingBorn(x, y)
       }
     } else {
       // 在其它情况下，该细胞为死，即该细胞若原先为生，则转为死，若原先为死，则保持不变
-      if (this.isAliveAt(x, y)) {
+      if (this.isAliveAt(`_${x}_${y}`)) {
         this.signDying(x, y)
       }
     }
@@ -155,7 +143,7 @@ function makeSoup(minX, maxX, minY, maxY, probability) {
   return resArr
 }
 
-const gameWorld = new World(makeSoup(20,100,20,100,0.37))
+const gameWorld = new World(makeSoup(20, 100, 20, 100, 0.37))
 // 
 // [0, 0],
 // [3, 0],
@@ -174,6 +162,7 @@ const gameWorld = new World(makeSoup(20,100,20,100,0.37))
 // [2, 1]
 
 setInterval(function () {
+  console.time('time');
   // 大小
   const size = 5
   // 获取刷新区域
@@ -190,7 +179,7 @@ setInterval(function () {
   gameWorld.playGame()
   // 获取有生命的坐标
   const lives = gameWorld.lives
-  const livesPosStrArr = Object.keys(lives)
+  const livesPosStrArr = Object.keys(lives).filter(key => lives[key])
   // 依据坐标画图
   livesPosStrArr.forEach(posStr => {
     // _1_2=>1_2=>[1,2]
@@ -199,5 +188,6 @@ setInterval(function () {
     // 画方块
     ctx.fillRect(parseInt(x) * size, parseInt(y) * size, size, size)
   })
-  console.log(gameWorld.lives.length);
+  // console.log(gameWorld.count);
+  console.timeEnd('time');
 }, 100)
