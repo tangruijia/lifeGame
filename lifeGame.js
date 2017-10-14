@@ -10,13 +10,6 @@ class World {
     this.lives = {}
     // 记录生命的个数
     this.count = 0
-    // 游戏的区域，随着生命的坐标增长而增长
-    this.region = {
-      minX: 0,
-      maxX: 0,
-      minY: 0,
-      maxY: 0
-    }
     // 暂存一轮游戏中出生/死亡的坐标，在统一处理后清空。
     this.dyingStash = []
     this.beingBornStash = []
@@ -31,6 +24,18 @@ class World {
     this.beingBornStash.forEach(positionArr => this.born(...positionArr))
     this.beingBornStash.length = 0
   }
+  // xy坐标=>以坐标为中间坐标的一个9宫格的位置_x_y格式数组
+  getArdSqrPosStrArr(x, y) {
+    const num_x = parseInt(x)
+    const num_y = parseInt(y)
+    const posStrArr = []
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        posStrArr.push(`_${num_x + i}_${num_y + j}`)
+      }
+    }
+    return posStrArr
+  }
   // 获取world中坐标xy处是否存在生命
   isAliveAt(posStr) {
     return this.lives[posStr] ? true : false
@@ -39,17 +44,6 @@ class World {
   signBeingBorn(x, y) {
     const positionArr = [x, y]
     this.beingBornStash.push(positionArr)
-    // 记录下最大最小xy
-    const {
-      minX,
-      maxX,
-      minY,
-      maxY
-    } = this.region
-    if (x < minX) this.region.minX = x
-    if (y < minY) this.region.minY = y
-    if (x > maxX) this.region.maxX = x
-    if (y > maxY) this.region.maxY = y
   }
   // 标记为将死亡
   signDying(x, y) {
@@ -66,18 +60,16 @@ class World {
   kill(x, y) {
     const key = `_${x}_${y}`
     if (this.lives[key]) {
-      this.lives[key] = false
+      delete this.lives[key]
     }
     this.count--
   }
   // 根据一个格子的周围8个格子标记生存死亡
   signBasisOfAround(x, y) {
-    // 计算周围格子的坐标集合
-    const posAround = [
-      `_${x - 1}_${y - 1}`, `_${x}_${y - 1}`, `_${x + 1}_${y - 1}`,
-      `_${x - 1}_${y }`, `_${x + 1}_${y}`,
-      `_${x - 1}_${y + 1}`, `_${x}_${y + 1}`, `_${x + 1}_${y + 1}`
-    ]
+    // 计算周围格子的坐标集合(不包含中心)
+    const posAround = this.getArdSqrPosStrArr(x, y)
+    // 去除中心
+    posAround.splice(4, 1)
     // 数周围格子存活数
     const aliveNumAround = (() => {
       let count = 0
@@ -105,26 +97,31 @@ class World {
   }
   // 玩游戏
   playGame() {
-    const {
-      minX,
-      maxX,
-      minY,
-      maxY
-    } = this.region
-    // 在区域长宽加1内玩游戏
-    for (let i = minX - 1; i <= maxX + 1; i++) {
-      for (let j = minY - 1; j <= maxY + 1; j++) {
-        this.signBasisOfAround(i, j)
-      }
-    }
+    // region存放需要检测的单元格
+    const region = new Set()
+    Object.keys(this.lives).forEach(key => {
+      // 获取每个生命的xy
+      const posArr = key.slice(1).split('_')
+      const [x, y] = posArr
+      // 获取每个生命的周围9格坐标
+      const ardSqrPosStrArr = this.getArdSqrPosStrArr(x, y)
+      // 将一个生命的周围9格加入region(自动去重)
+      ardSqrPosStrArr.forEach(posStr => {
+        region.add(posStr)
+      })
+    })
+    // 确定所有需要检测的单元格后，遍历标记
+    region.forEach(posStr => {
+      const posArr = posStr.slice(1).split('_')
+      const [x, y] = posArr
+      this.signBasisOfAround(x, y)
+    })
     // 标记完成后,杀死或诞生
     this.beingBornStash.forEach(positionArr => this.born(...positionArr))
     this.dyingStash.forEach(positionArr => this.kill(...positionArr))
     // 清除stash
     this.beingBornStash.length = 0
     this.dyingStash.length = 0
-    // console.log({ ...this.lives
-    // })
   }
 }
 
@@ -143,7 +140,7 @@ function makeSoup(minX, maxX, minY, maxY, probability) {
   return resArr
 }
 
-const gameWorld = new World(makeSoup(20, 100, 20, 100, 0.37))
+const gameWorld = new World(makeSoup(20, 200, 20, 200, 0.37))
 // 
 // [0, 0],
 // [3, 0],
@@ -161,17 +158,15 @@ const gameWorld = new World(makeSoup(20, 100, 20, 100, 0.37))
 // [2, 0],
 // [2, 1]
 
-setInterval(function () {
+function go() {
   console.time('time');
   // 大小
   const size = 5
   // 获取刷新区域
-  const {
-    minX,
-    maxX,
-    minY,
-    maxY
-  } = gameWorld.region
+  let minX = 0
+  let maxX = 1000
+  let minY = 0
+  let maxY = 1000
   const regionRectArgs = [minX - 1, minY - 1, (maxX - minX + 2) * size, (maxY - minY + 2) * size]
   // 清空刷新区域画布
   ctx.clearRect(...regionRectArgs)
@@ -179,7 +174,7 @@ setInterval(function () {
   gameWorld.playGame()
   // 获取有生命的坐标
   const lives = gameWorld.lives
-  const livesPosStrArr = Object.keys(lives).filter(key => lives[key])
+  const livesPosStrArr = Object.keys(lives)
   // 依据坐标画图
   livesPosStrArr.forEach(posStr => {
     // _1_2=>1_2=>[1,2]
@@ -190,4 +185,6 @@ setInterval(function () {
   })
   // console.log(gameWorld.count);
   console.timeEnd('time');
-}, 100)
+}
+
+setInterval(go, 100)
