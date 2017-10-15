@@ -1,13 +1,17 @@
-const body = document.getElementsByTagName('body')[0]
-const canvas = document.getElementById('cvs')
+const body:any = document.getElementsByTagName('body')[0]
+const canvas:any = document.getElementById('cvs')
 canvas.width = body.clientWidth
 canvas.height = body.clientHeight
 const ctx = canvas.getContext('2d')
 
 class World {
-  constructor(startArr) {
+  lives: Map<string,boolean>
+  count: number
+  beingBornStash: string[]
+  dyingStash: string[]
+  constructor(startArr: number[][]) {
     // 记录游戏内的生命 {_0_0:true,_2_2:true}每个life的名字为x坐标_y坐标
-    this.lives = {}
+    this.lives = new Map<string,boolean>()
     // 记录生命的个数
     this.count = 0
     // 暂存一轮游戏中出生/死亡的坐标，在统一处理后清空。
@@ -17,55 +21,48 @@ class World {
     this.initLives(startArr)
   }
   // 初始化lives稀疏数组
-  initLives(startArr) {
+  initLives(startArr: number[][]) {
     const self = this
     // 初始化lives
-    startArr.forEach(positionArr => this.signBeingBorn(...positionArr))
-    this.beingBornStash.forEach(positionArr => this.born(...positionArr))
+    startArr.forEach(posArr => this.signBeingBorn(`_${posArr[0]}_${posArr[1]}`))
+    this.beingBornStash.forEach(posStr => this.born(posStr))
     this.beingBornStash.length = 0
   }
+  // 获取world中坐标xy处是否存在生命
+  isAliveAt(posStr: string) {
+    return this.lives.get(posStr) ? true : false
+  }
+  // 标记为将出生
+  signBeingBorn(posStr: string) {
+    this.beingBornStash.push(posStr)
+  }
+  // 标记为将死亡
+  signDying(posStr: string) {
+    this.dyingStash.push(posStr)
+  }
+  // 坐标xy处生存
+  born(posStr: string) {
+    this.lives.set(posStr,true)
+    this.count++
+  }
+  // 坐标xy处死亡
+  kill(posStr: string) {
+    this.lives.delete(posStr)
+    this.count--
+  }
   // xy坐标=>以坐标为中间坐标的一个9宫格的位置_x_y格式数组
-  getArdSqrPosStrArr(x, y) {
-    const num_x = parseInt(x)
-    const num_y = parseInt(y)
-    const posStrArr = []
+  getArdSqrPosStrArr(x: number, y: number) {
+    const posStrArr: string[] = []
     for (let i = -1; i <= 1; i++) {
       for (let j = -1; j <= 1; j++) {
-        posStrArr.push(`_${num_x + i}_${num_y + j}`)
+        posStrArr.push(`_${x + i}_${y + j}`)
       }
     }
     return posStrArr
   }
-  // 获取world中坐标xy处是否存在生命
-  isAliveAt(posStr) {
-    return this.lives[posStr] ? true : false
-  }
-  // 标记为将出生
-  signBeingBorn(x, y) {
-    const positionArr = [x, y]
-    this.beingBornStash.push(positionArr)
-  }
-  // 标记为将死亡
-  signDying(x, y) {
-    const positionArr = [x, y]
-    this.dyingStash.push(positionArr)
-  }
-  // 坐标xy处生存
-  born(x, y) {
-    const key = `_${x}_${y}`
-    this.lives[key] = true
-    this.count++
-  }
-  // 坐标xy处死亡
-  kill(x, y) {
-    const key = `_${x}_${y}`
-    if (this.lives[key]) {
-      delete this.lives[key]
-    }
-    this.count--
-  }
   // 根据一个格子的周围8个格子标记生存死亡
-  signBasisOfAround(x, y) {
+  signBasisOfAround(x: number, y: number) {
+    const posStr = `_${x}_${y}`
     // 计算周围格子的坐标集合(不包含中心)
     const posAround = this.getArdSqrPosStrArr(x, y)
     // 去除中心
@@ -85,40 +82,40 @@ class World {
       // 如果一个细胞周围有2个细胞为生，则该细胞的生死状态保持不变
     } else if (aliveNumAround === 3) {
       // 如果一个细胞周围有3个细胞为生，则该细胞为生，即该细胞若原先为死，则转为生，若原先为生，则保持不变
-      if (!this.isAliveAt(`_${x}_${y}`)) {
-        this.signBeingBorn(x, y)
+      if (!this.isAliveAt(posStr)) {
+        this.signBeingBorn(posStr)
       }
     } else {
       // 在其它情况下，该细胞为死，即该细胞若原先为生，则转为死，若原先为死，则保持不变
-      if (this.isAliveAt(`_${x}_${y}`)) {
-        this.signDying(x, y)
+      if (this.isAliveAt(posStr)) {
+        this.signDying(posStr)
       }
     }
   }
   // 玩游戏
   playGame() {
-    // region存放需要检测的单元格
-    const region = new Set()
-    Object.keys(this.lives).forEach(key => {
-      // 获取每个生命的xy
-      const posArr = key.slice(1).split('_')
-      const [x, y] = posArr
-      // 获取每个生命的周围9格坐标
-      const ardSqrPosStrArr = this.getArdSqrPosStrArr(x, y)
-      // 将一个生命的周围9格加入region(自动去重)
+    // activeRegion存放需要检测的单元格
+    const activeRegion: Set<string> = new Set()
+    const livesPosStrArr = this.lives.keys()
+
+    for(let posStr of livesPosStrArr){
+      // 获取生命的xy
+      const posArr = posStr.slice(1).split('_').map(numStr => parseInt(numStr))
+      // 获取生命的周围9格坐标
+      const ardSqrPosStrArr = this.getArdSqrPosStrArr(posArr[0],posArr[1])
+      // 将一个生命的周围9格加入activeRegion(自动去重)
       ardSqrPosStrArr.forEach(posStr => {
-        region.add(posStr)
+        activeRegion.add(posStr)
       })
-    })
+    }
     // 确定所有需要检测的单元格后，遍历标记
-    region.forEach(posStr => {
-      const posArr = posStr.slice(1).split('_')
-      const [x, y] = posArr
-      this.signBasisOfAround(x, y)
+    activeRegion.forEach(posStr => {
+      const posArr = posStr.slice(1).split('_').map(numStr => parseInt(numStr))
+      this.signBasisOfAround(posArr[0],posArr[1])
     })
     // 标记完成后,杀死或诞生
-    this.beingBornStash.forEach(positionArr => this.born(...positionArr))
-    this.dyingStash.forEach(positionArr => this.kill(...positionArr))
+    this.beingBornStash.forEach(posStr => this.born(posStr))
+    this.dyingStash.forEach(posStr => this.kill(posStr))
     // 清除stash
     this.beingBornStash.length = 0
     this.dyingStash.length = 0
@@ -126,8 +123,8 @@ class World {
 }
 
 // 煮汤
-function makeSoup(minX, maxX, minY, maxY, probability) {
-  let resArr = []
+function makeSoup(minX: number, maxX: number, minY: number, maxY: number, probability: number) {
+  let resArr: number[][] = []
   let randomNum = 0
   for (let i = minX; i <= maxX; i++) {
     for (let j = minY; j <= maxY; j++) {
@@ -140,7 +137,7 @@ function makeSoup(minX, maxX, minY, maxY, probability) {
   return resArr
 }
 
-const gameWorld = new World(makeSoup(20, 200, 20, 200, 0.37))
+const gameWorld = new World(makeSoup(20, 300, 20, 300, 0.37))
 // 
 // [0, 0],
 // [3, 0],
@@ -174,16 +171,16 @@ function go() {
   gameWorld.playGame()
   // 获取有生命的坐标
   const lives = gameWorld.lives
-  const livesPosStrArr = Object.keys(lives)
+  const livesPosStrArr = lives.keys()
   // 依据坐标画图
-  livesPosStrArr.forEach(posStr => {
+  for(let posStr of livesPosStrArr){
     // _1_2=>1_2=>[1,2]
-    const positionArr = posStr.slice(1).split('_')
-    const [x, y] = positionArr
+    const posArr = posStr.slice(1).split('_')
+    const [x, y] = posArr
     // 画方块
     ctx.fillRect(parseInt(x) * size, parseInt(y) * size, size, size)
-  })
-  // console.log(gameWorld.count);
+  }
+  console.log(gameWorld.count);
   console.timeEnd('time');
 }
 
