@@ -7,24 +7,18 @@ class World {
     constructor(startArr) {
         this.lives = new Map();
         this.count = 0;
-        this.dyingStash = [];
         this.beingBornStash = [];
+        this.dyingStash = [];
         this.initLives(startArr);
     }
     initLives(startArr) {
         const self = this;
-        startArr.forEach(posArr => this.signBeingBorn(`_${posArr[0]}_${posArr[1]}`));
+        startArr.forEach(posArr => this.signBeingBorn(`${posArr[0]}_${posArr[1]}`));
         this.beingBornStash.forEach(posStr => this.born(posStr));
         this.beingBornStash.length = 0;
     }
     isAliveAt(posStr) {
-        return this.lives.get(posStr) ? true : false;
-    }
-    signBeingBorn(posStr) {
-        this.beingBornStash.push(posStr);
-    }
-    signDying(posStr) {
-        this.dyingStash.push(posStr);
+        return this.lives.has(posStr) ? true : false;
     }
     born(posStr) {
         this.lives.set(posStr, true);
@@ -34,17 +28,23 @@ class World {
         this.lives.delete(posStr);
         this.count--;
     }
+    signBeingBorn(posStr) {
+        this.beingBornStash.push(posStr);
+    }
+    signDying(posStr) {
+        this.dyingStash.push(posStr);
+    }
     getArdSqrPosStrArr(x, y) {
         const posStrArr = [];
         for (let i = -1; i <= 1; i++) {
             for (let j = -1; j <= 1; j++) {
-                posStrArr.push(`_${x + i}_${y + j}`);
+                posStrArr.push(`${x + i}_${y + j}`);
             }
         }
         return posStrArr;
     }
     signBasisOfAround(x, y) {
-        const posStr = `_${x}_${y}`;
+        const posStr = `${x}_${y}`;
         const posAround = this.getArdSqrPosStrArr(x, y);
         posAround.splice(4, 1);
         const aliveNumAround = (() => {
@@ -73,14 +73,14 @@ class World {
         const activeRegion = new Set();
         const livesPosStrArr = this.lives.keys();
         for (let posStr of livesPosStrArr) {
-            const posArr = posStr.slice(1).split('_').map(numStr => parseInt(numStr));
+            const posArr = posStr.split('_').map(numStr => parseInt(numStr));
             const ardSqrPosStrArr = this.getArdSqrPosStrArr(posArr[0], posArr[1]);
             ardSqrPosStrArr.forEach(posStr => {
                 activeRegion.add(posStr);
             });
         }
         activeRegion.forEach(posStr => {
-            const posArr = posStr.slice(1).split('_').map(numStr => parseInt(numStr));
+            const posArr = posStr.split('_').map(numStr => parseInt(numStr));
             this.signBasisOfAround(posArr[0], posArr[1]);
         });
         this.beingBornStash.forEach(posStr => this.born(posStr));
@@ -110,13 +110,12 @@ function go() {
     let maxX = 1000;
     let minY = 0;
     let maxY = 1000;
-    const regionRectArgs = [minX - 1, minY - 1, (maxX - minX + 2) * size, (maxY - minY + 2) * size];
-    ctx.clearRect(...regionRectArgs);
+    ctx.clearRect(minX - 1, minY - 1, (maxX - minX + 2) * size, (maxY - minY + 2) * size);
     gameWorld.playGame();
     const lives = gameWorld.lives;
     const livesPosStrArr = lives.keys();
     for (let posStr of livesPosStrArr) {
-        const posArr = posStr.slice(1).split('_');
+        const posArr = posStr.split('_');
         const [x, y] = posArr;
         ctx.fillRect(parseInt(x) * size, parseInt(y) * size, size, size);
     }
