@@ -1,5 +1,6 @@
-import World from './World'
 import 'babel-polyfill'
+import World from './World'
+import {makeSoup} from './Factory'
 
 // const docElm = document.documentElement
 // docElm.webkitRequestFullScreen()
@@ -10,39 +11,7 @@ canvas.height = body.clientHeight
 const ctx = canvas.getContext('2d')
 
 
-
-// 煮汤
-function makeSoup(minX: number, maxX: number, minY: number, maxY: number, probability: number): number[][] {
-  let resArr: number[][] = []
-  let randomNum = 0
-  for (let i = minX; i <= maxX; i++) {
-    for (let j = minY; j <= maxY; j++) {
-      randomNum = Math.random()
-      if (randomNum <= probability) {
-        resArr.push([i, j])
-      }
-    }
-  }
-  return resArr
-}
-
 const gameWorld = new World(makeSoup(20, 300, 20, 300, 0.37))
-// 
-// [0, 0],
-// [3, 0],
-// [4, 1],
-// [4, 2],
-// [4, 3],
-// [3, 3],
-// [2, 3],
-// [1, 3],
-// [0, 2],
-// ==========
-// [0, 0],
-// [1, 1],
-// [1, 2],
-// [2, 0],
-// [2, 1]
 
 function go(): void {
   console.time('time');
