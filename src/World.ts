@@ -95,7 +95,7 @@ export default class World {
     // 遍历所有生命的做标集合获得活动区域
     for (let posStr of livesPosStrArr) {
       // 获取生命的xy
-      const posArr = posStr.split('_').map(numStr => parseInt(numStr))
+      const posArr = <[number,number]>posStr.split('_').map(numStr => parseInt(numStr))
       // 获取生命的周围9格坐标
       const ardSqrPosStrArr = this.getArdSqrPosStrArr(posArr[0], posArr[1])
       // 将一个生命的周围9格加入activeRegion(自动去重)
@@ -105,7 +105,7 @@ export default class World {
     }
     // 确定所有需要检测的单元格后，遍历标记
     activeRegion.forEach(posStr => {
-      const posArr = posStr.split('_').map(numStr => parseInt(numStr))
+      const posArr = <[number,number]>posStr.split('_').map(numStr => parseInt(numStr))
       this.signBasisOfAround(posArr[0], posArr[1])
     })
     // 标记完成后,杀死或诞生
