@@ -2,8 +2,7 @@ const path = require('path');
 const webpack = require('webpack')
 
 module.exports = {
-  devtool: 'source-map',
-  entry: './src/lifeGame.ts',
+  entry: './src/index.ts',
   // entry: ['babel-polyfill','./src/lifeGame.ts'],
   output: {
     path: path.resolve(__dirname, 'dist'),
@@ -24,6 +23,6 @@ module.exports = {
   },
   plugins: [
     new webpack.optimize.ModuleConcatenationPlugin(),
-    new webpack.optimize.UglifyJsPlugin(),
+    // new webpack.optimize.UglifyJsPlugin(),
   ]
 };
