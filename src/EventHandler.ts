@@ -32,15 +32,6 @@ export function handleMouseEvent(e: MouseEvent) {
       isMouseDown = false
       store.deltaPosArr = [deltaPosArrThis[0] + deltaPosArrSofar[0], deltaPosArrThis[1] + deltaPosArrSofar[1]]
       break
-    case 'dblclick':
-      store.body.webkitRequestFullScreen()
-      // 不知道为什么10毫秒好使
-      setTimeout(() => {
-        store.canvas.width = store.body.clientWidth
-        store.canvas.height = store.body.clientHeight
-        store.ctx.fillStyle = '#0077D2'
-      }, 10)
-      break
   }
 }
 

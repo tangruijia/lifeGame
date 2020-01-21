@@ -1,15 +1,11 @@
 {
   "presets": [
     [
-      "env",
+      "@babel/preset-env",
       {
-        "targets": {
-          // "uglify":true,
-          "chrome": 62
-          // "browsers": ["> 1%", "last 2 versions", "not ie <= 8"]
-        },
-        "useBuiltIns": "true",
-        "debug": true
+        "useBuiltIns": "usage",
+        "modules": false,
+        "corejs": 3
       }
     ]
   ]

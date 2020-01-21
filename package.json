@@ -4,21 +4,23 @@
   "description": "life game",
   "main": "index.js",
   "scripts": {
-    "build": "webpack --config webpack.prod.config.js",
-    "start": "webpack-dev-server --config webpack.dev.config.js"
+    "build": "webpack --config build/prod.js",
+    "start": "webpack-dev-server --config build/dev.js"
   },
   "author": "tangruijia",
   "license": "ISC",
   "devDependencies": {
-    "babel-core": "latest",
-    "babel-loader": "latest",
-    "babel-preset-env": "latest",
-    "ts-loader": "latest",
-    "typescript": "latest",
-    "webpack": "latest",
-    "webpack-dev-server": "latest"
+    "@babel/core": "^7.8.3",
+    "@babel/preset-env": "^7.8.3",
+    "babel-loader": "^8.0.6",
+    "html-webpack-plugin": "^3.2.0",
+    "ts-loader": "^6.2.1",
+    "typescript": "^3.7.5",
+    "webpack": "^4.41.5",
+    "webpack-cli": "^3.3.10",
+    "webpack-dev-server": "^3.10.1"
   },
   "dependencies": {
-    "babel-polyfill": "latest"
+    "core-js": "^3.6.4"
   }
 }

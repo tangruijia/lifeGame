@@ -1,4 +1,3 @@
-import 'babel-polyfill'
 import World from './World'
 import { makeSoup } from './Factory'
 import { handleMouseEvent, handleTouchEvent } from './EventHandler'
